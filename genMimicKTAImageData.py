@@ -12,27 +12,33 @@ from shutil import copyfile
 import shutil
 
 sourceDir = "C:\\Work_Willy\\ImageLoader_test\\Image_LotKTA222_Original"
-#destRootDir = "E:\\ImageLoader_test\\test_nestForder"
+destRootDir = "E:\\ImageLoader_test\\test_nestForder"
 #destRootDir = "Z:\\Public\\KTA_ImageLoaderTest\\test_nestForder"
 #destRootDir = "Y:\\Public\\KTA_ImageLoaderTest\\test_nestForder"
 #destRootDir = "X:\\Public\\imageloader_test\\test_nestForder"
-destRootDir = "C:\\Users\\willy\\Desktop\\testingImageGen\\test_nestForder"
+#destRootDir = "C:\\Users\\willy\\Desktop\\testingImageGen\\test_nestForder"
 inFiles = os.listdir(sourceDir)
 
-mimicFilesGenVirtualTime = datetime.datetime.strptime('23:56:00:000000 07/31/2019', '%H:%M:%S:%f %m/%d/%Y')
+#mimicFilesGenVirtualTime = datetime.datetime.strptime('23:56:00:000000 07/31/2019', '%H:%M:%S:%f %m/%d/%Y')
+
+try:
+	#====================================#
+	# Try to create the folder,          #
+	# Pass, if the folder already exist. #
+	#====================================#
+	os.makedirs(destRootDir)
+except:
+	pass
 
 
-os.makedirs(destRootDir)
+for i in range (15,20):
 
-for i in range (1,10):
-
-	genLotInitTime = datetime.datetime.now()
+	mimicFilesGenVirtualTime = datetime.datetime.strptime('00:00:00:000000 08/01/2019', '%H:%M:%S:%f %m/%d/%Y') + datetime.timedelta(seconds = (i-1)*7*60)
 
 	serialNumber = "%05d" %i
 	productName = "PROD"+str(serialNumber)
 	recipeName = "RECIPE"+str(serialNumber)
 	lotIDName  = "LOT"+str(serialNumber)
-
 
 	#destDir = destRootDir+"\\"+productName+"\\"+recipeName+"\\"+lotIDName
 	destDir = destRootDir
@@ -82,12 +88,10 @@ for i in range (1,10):
 		sys.stdout.flush()
 
 		if os.path.splitext(f)[1] == '.xml' :
-
-			#thisFilesTime = virtualTime + datetime.timedelta(microseconds = (datetime.datetime.now()-genLotInitTime).seconds)
 			#----------------------------------------------------------------------------------------------------------------------------------------#
 			# For saving the files to remote disk, it took more than 5 mins, thus time delta -240 seconds to prevent files time over than kdata time #
 			#----------------------------------------------------------------------------------------------------------------------------------------#
-			thisFilesTime = mimicFilesGenVirtualTime + (datetime.datetime.now() - genLotInitTime) #+ datetime.timedelta(seconds = -240)
+			thisFilesTime = mimicFilesGenVirtualTime + datetime.timedelta(seconds = 0.12*fileCount)
 
 			inputXML_tree = ET.parse(sourceDir+"\\"+f)
 			inputXML_tree.getroot()
@@ -140,7 +144,7 @@ for i in range (1,10):
 	print("finished, at : "+genFilesFinishedTime.strftime("%H:%M:%S") + "  Total consumed time:"+str((genFilesFinishedTime-genFilesStartTime).seconds))
 
 	#mimicFilesGenVirtualTime = mimicFilesGenVirtualTime+datetime.timedelta(seconds = 7*60)
-	mimicFilesGenVirtualTime = datetime.datetime.strptime('23:56:00:000000 07/31/2019', '%H:%M:%S:%f %m/%d/%Y') + datetime.timedelta(seconds = i*7*60)
+	#mimicFilesGenVirtualTime = datetime.datetime.strptime('23:56:00:000000 07/31/2019', '%H:%M:%S:%f %m/%d/%Y') + datetime.timedelta(seconds = i*7*60)
 
 
 	#time.sleep(120)
