@@ -5,14 +5,16 @@ import time
 import sys
 import re
 import datetime
+import py7zr
 from pathlib import Path
 
 
 from shutil import copyfile
 import shutil
 
-sourceDir = "C:\\Work_Willy\\ImageLoader_test\\Image_LotKTA222_Original"
-destRootDir = "E:\\ImageLoader_test\\test_nestForder"
+sourceDir = "E:\\Work_Willy\\ImageLoader_TestDataSource\\Image_LotKTA222_Original"
+testingHomeDir = "D:\\ImageLoader_test\\"
+destRootDir = testingHomeDir+"test_nestForder_OV1"
 #destRootDir = "Z:\\Public\\KTA_ImageLoaderTest\\test_nestForder"
 #destRootDir = "Y:\\Public\\KTA_ImageLoaderTest\\test_nestForder"
 #destRootDir = "X:\\Public\\imageloader_test\\test_nestForder"
@@ -31,7 +33,7 @@ except:
 	pass
 
 
-for i in range (15,20):
+for i in range (1,100):
 
 	mimicFilesGenVirtualTime = datetime.datetime.strptime('00:00:00:000000 08/01/2019', '%H:%M:%S:%f %m/%d/%Y') + datetime.timedelta(seconds = (i-1)*7*60)
 
@@ -39,9 +41,31 @@ for i in range (15,20):
 	productName = "PROD"+str(serialNumber)
 	recipeName = "RECIPE"+str(serialNumber)
 	lotIDName  = "LOT"+str(serialNumber)
+	folderTimeStemp = datetime.datetime.now().strftime("%m%d%y.%H%M%S.%f")[:-3]
 
+
+	#===================================================
+	# Mode 1, the case of all file export to dir folder 
+	#===================================================
+	#destDir = destRootDir
+
+	
+	#==============================================================================
+	# Mode 2, the case of folder base on folder named "<lotID>_"+"DatetimeFormate"
+	#==============================================================================
+	#destDir = destRootDir+"\\lot"+str(serialNumber)+"_"+folderTimeStemp
+
+	
+	#========================================================
+	# Mode 3, the case of folder in the sub-folder structure 
+	#========================================================	
 	#destDir = destRootDir+"\\"+productName+"\\"+recipeName+"\\"+lotIDName
-	destDir = destRootDir
+
+	#=========================================================================================#
+	# Mode 4 ~ 6, need to create a temp dir, to store the temp for diring archiving the files #
+	#=========================================================================================#
+	tempDir = testingHomeDir+"temp"
+	destDir = tempDir+"\\lot"+str(serialNumber)+"_"+folderTimeStemp
 
 	'''
 	======================================================================
@@ -74,12 +98,16 @@ for i in range (15,20):
 	print(str(len(inFiles))+" files found")
 	fileCount = 0
 
+	# Add at 09/30
+	# Fitting for new CXMT requirment, create folder for certain timestemp
 
-	# Add at 7/31
-	copyfile("C:\\Work_Willy\\ImageLoader_test\\ImageLoaderTesting_KData_SerialTime\\"+lotIDName+".kdata", destDir+"\\"+lotIDName+".kdata")
+	try:
+		os.makedirs(destDir)
+	except:
+		pass
 
 	for f in inFiles:
-		
+
 		fileCount+=1
 
 		k = math.floor((fileCount/(len(inFiles)))*100) + 1      
@@ -105,18 +133,40 @@ for i in range (15,20):
 			ProductElementTime = inputXML_tree.find("DateAndTime")
 			ProductElementTime.text = str(thisFilesTime.strftime('%H:%M:%S:%f')[:-3])+' '+str(thisFilesTime.strftime('%m/%d/%Y'))
 			
-			ProductElementWaferID = inputXML_tree.find("WaferId")
+			#ProductElementSlotID = inputXML_tree.find("SlotNumber")
+			#ProductElementSlotID.text = str(int(ProductElementSlotID.text) + 10)
 
-			# Add at 7/31
+			ProductElementWaferID = inputXML_tree.find("WaferId")
+			#ProductElementWaferID.text = "WaferAAA"+ProductElementSlotID.text
+			
+
+			#=======================================================#
+			# Mode 1 or 2, Saving all the file into the same folder #
+			#=======================================================#
 			inputXML_tree.write(destDir+"\\"+"MEASUREMENT_INNER_"+lotIDName+"_"+str(thisFilesTime.strftime('%m%d%y.%H%M%S.%f')[:-3])+".xml")
 			copyfile(sourceDir+"\\LotKTA222_TIF\\"+os.path.splitext(f)[0]+".tif", destDir+"\\"+"MEASUREMENT_INNER_"+lotIDName+"_"+str(thisFilesTime.strftime('%m%d%y.%H%M%S.%f')[:-3])+".tif")
 			
+			#--------------------------------#
+			# Save as Measurement outer type #
+			#--------------------------------#
+			ProductElementImageType = inputXML_tree.find("ImageType")
+			ProductElementImageType.text = "Acquisition Outer"
+			inputXML_tree.write(destDir+"\\"+"MEASUREMENT_OUTER_"+lotIDName+"_"+str(thisFilesTime.strftime('%m%d%y.%H%M%S.%f')[:-3])+".xml")
+			copyfile(sourceDir+"\\LotKTA222_TIF\\"+os.path.splitext(f)[0]+".tif", destDir+"\\"+"MEASUREMENT_OUTER_"+lotIDName+"_"+str(thisFilesTime.strftime('%m%d%y.%H%M%S.%f')[:-3])+".tif")
+			
+			#====================#
+			# End of Mode 1 or 2 #
+			#====================#
+
+
+			#===========================================================#
+			# Mode3, seperate image into 2 slot id(identified by wafer) #
+			#===========================================================#
 			'''
 			if "WAFER01" in ProductElementWaferID.text:
 				# Add in 7/30 
 				if not Path(destDir+"\\WAFER01").exists() :
 					os.makedirs(destDir+"\\WAFER01")
-					copyfile("C:\\Work_Willy\\ImageLoader_test\\ImageLoaderTesting_KData_SerialTime\\"+lotIDName+".kdata", destDir+"\\WAFER01\\"+lotIDName+".kdata")
 				#inputXML_tree.write(destDir+"\\WAFER01\\"+lotIDName+"_"+re.sub("LotKTA222(\\S+)_", "", f))
 				#copyfile(sourceDir+"\\LotKTA222_TIF\\"+os.path.splitext(f)[0]+".tif", destDir+"\\WAFER01\\"+lotIDName+"_"+re.sub("LotKTA222(\\S+)_", "", os.path.splitext(f)[0])+".tif")
 				#=========================================#
@@ -129,7 +179,6 @@ for i in range (15,20):
 				#Add in 7/30
 				if not Path(destDir+"\\WAFER02").exists() :
 					os.makedirs(destDir+"\\WAFER02")
-					copyfile("C:\\Work_Willy\\ImageLoader_test\\ImageLoaderTesting_KData_SerialTime\\"+lotIDName+".kdata", destDir+"\\WAFER02\\"+lotIDName+".kdata")
 				#inputXML_tree.write(destDir+"\\WAFER02\\"+lotIDName+"_"+re.sub("LotKTA222(\\S+)_", "", f))
 				#copyfile(sourceDir+"\\LotKTA222_TIF\\"+os.path.splitext(f)[0]+".tif", destDir+"\\WAFER02\\"+lotIDName+"_"+re.sub("LotKTA222(\\S+)_", "", os.path.splitext(f)[0])+".tif")
 				#=========================================#
@@ -138,8 +187,33 @@ for i in range (15,20):
 				inputXML_tree.write(destDir+"\\WAFER02\\"+"MEASUREMENT_INNER_"+lotIDName+"_"+str(thisFilesTime.strftime('%m%d%y.%H%M%S.%f')[:-3])+".xml")
 				copyfile(sourceDir+"\\LotKTA222_TIF\\"+os.path.splitext(f)[0]+".tif", destDir+"\\WAFER02\\"+"MEASUREMENT_INNER_"+lotIDName+"_"+str(thisFilesTime.strftime('%m%d%y.%H%M%S.%f')[:-3])+".tif")
 			'''
+			#===============#
+			# End of Mode 3 #
+			#===============#
 
-			#time.sleep(0.2)
+			#========================#
+			# End of files iteration #
+			#========================#
+			time.sleep(0)
+
+
+	#======================================#
+	#shutil.register_archive_format('7zip', py7zr.pack_7zarchive, description='7zip archive')
+	#shutil.make_archive(destDir, '7zip', destDir)
+
+	#========================================#
+	# Mode to archive all files into 7z file #
+	#========================================#
+	archive = py7zr.SevenZipFile(destDir+'.7z', 'w')
+	archive.writeall(destDir, 'lot'+str(serialNumber)+'_'+folderTimeStemp)
+	archive.close()
+	shutil.move(destDir+'.7z', destRootDir+"\\lot"+str(serialNumber)+"_"+folderTimeStemp+'.7z')
+	#===================================#
+	# End of archive files into 7z file #
+	#===================================#
+
+
+
 	genFilesFinishedTime = datetime.datetime.now()
 	print("finished, at : "+genFilesFinishedTime.strftime("%H:%M:%S") + "  Total consumed time:"+str((genFilesFinishedTime-genFilesStartTime).seconds))
 
@@ -147,4 +221,4 @@ for i in range (15,20):
 	#mimicFilesGenVirtualTime = datetime.datetime.strptime('23:56:00:000000 07/31/2019', '%H:%M:%S:%f %m/%d/%Y') + datetime.timedelta(seconds = i*7*60)
 
 
-	#time.sleep(120)
+	time.sleep(0)
